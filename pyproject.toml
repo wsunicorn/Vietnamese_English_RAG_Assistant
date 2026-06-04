@@ -1,0 +1,55 @@
+[project]
+name = "vietnamese-english-rag-assistant"
+version = "0.1.0"
+description = "FastAPI document RAG assistant with Vietnamese/English support, hybrid Qdrant retrieval, citations, feedback, and metrics."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.16.0",
+  "asyncpg>=0.30.0",
+  "docling>=2.40.0",
+  "fastapi[standard]>=0.115.0",
+  "fastembed>=0.6.0",
+  "openai>=1.90.0",
+  "pydantic-settings>=2.8.0",
+  "python-docx>=1.1.2",
+  "python-multipart>=0.0.20",
+  "pypdf>=5.6.0",
+  "qdrant-client>=1.14.0",
+  "sqlalchemy[asyncio]>=2.0.40",
+  "structlog>=25.0.0",
+  "tiktoken>=0.9.0",
+]
+
+[build-system]
+requires = ["setuptools>=74.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28.0",
+  "pytest>=8.4.0",
+  "pytest-asyncio>=0.25.0",
+  "ruff>=0.11.0",
+]
+eval = [
+  "ragas>=0.3.0",
+  "datasets>=3.6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

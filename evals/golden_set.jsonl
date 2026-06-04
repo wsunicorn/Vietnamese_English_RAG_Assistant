@@ -1,0 +1,3 @@
+{"id":"vi_demo_001","question":"Tai lieu noi gi ve chinh sach nghi phep?","expected_answer":"Answer should describe the leave policy from the uploaded document.","expected_document":"employee_handbook_vi.pdf","expected_pages":[1],"should_answer":true,"language":"vi"}
+{"id":"en_demo_001","question":"What documents are required for reimbursement?","expected_answer":"Answer should list reimbursement documents from the uploaded document.","expected_document":"expense_policy_en.pdf","expected_pages":[1],"should_answer":true,"language":"en"}
+{"id":"vi_no_answer_001","question":"Hom qua thoi tiet o Tokyo nhu the nao?","expected_answer":null,"expected_document":null,"expected_pages":[],"should_answer":false,"language":"vi"}

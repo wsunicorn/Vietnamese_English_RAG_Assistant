@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAG Document Assistant — Vietnamese & English</title>
+    <meta name="description" content="Upload documents, ask questions grounded in your sources, and get cited answers. Supports Vietnamese and English with hybrid retrieval." />
+    <meta name="theme-color" content="#0a0f1a" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- ─── TOPBAR ─────────────────────────────────── -->
+      <header class="topbar">
+        <div class="brand-lockup" aria-label="Vietnamese English RAG Assistant">
+          <span class="brand-mark">
+            <i data-lucide="brain-circuit"></i>
+          </span>
+          <div>
+            <p class="kicker">Document AI</p>
+            <h1>RAG Assistant</h1>
+          </div>
+        </div>
+
+        <section class="metrics-strip" id="metrics" aria-label="System metrics">
+          <article class="metric-card skeleton">
+            <span>Documents</span>
+            <strong>--</strong>
+          </article>
+          <article class="metric-card skeleton">
+            <span>Chunks</span>
+            <strong>--</strong>
+          </article>
+          <article class="metric-card skeleton">
+            <span>Chats</span>
+            <strong>--</strong>
+          </article>
+          <article class="metric-card skeleton">
+            <span>Latency</span>
+            <strong>--</strong>
+          </article>
+        </section>
+      </header>
+
+      <!-- ─── WORKSPACE ──────────────────────────────── -->
+      <main class="workspace">
+        <!-- ── Left Rail: Documents ─────────────────── -->
+        <aside class="surface document-rail" aria-label="Documents">
+          <div class="section-head">
+            <div>
+              <p class="kicker">Corpus</p>
+              <h2>Documents</h2>
+            </div>
+            <button class="icon-button" id="refresh-documents" type="button" aria-label="Refresh documents">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+
+          <form class="upload-dropzone" id="upload-form">
+            <input id="file-input" name="file" type="file" accept=".pdf,.docx,.txt" />
+            <label for="file-input" class="dropzone-label">
+              <span class="dropzone-icon">
+                <i data-lucide="file-up"></i>
+              </span>
+              <span class="dropzone-title">Upload source file</span>
+              <span class="dropzone-meta">PDF, DOCX, TXT up to 25 MB</span>
+            </label>
+            <div class="upload-actions">
+              <button class="primary-button" type="submit" id="upload-submit-btn">
+                <i data-lucide="upload-cloud"></i>
+                <span>Index</span>
+              </button>
+              <p id="upload-status" class="status-text">Ready</p>
+            </div>
+          </form>
+
+          <div class="rail-toolbar">
+            <span id="selected-count">All documents</span>
+            <button class="text-button" id="clear-selection" type="button">Clear</button>
+          </div>
+
+          <div class="document-list" id="document-list" aria-live="polite">
+            <article class="empty-state">
+              <i data-lucide="folder-open"></i>
+              <strong>No documents</strong>
+              <span>Corpus is empty.</span>
+            </article>
+          </div>
+        </aside>
+
+        <!-- ── Main: Chat ───────────────────────────── -->
+        <section class="surface chat-surface" aria-label="Grounded chat">
+          <div class="section-head chat-head">
+            <div>
+              <p class="kicker">Grounded answer</p>
+              <h2>Chat</h2>
+            </div>
+            <div class="head-actions">
+              <label class="topk-control" for="top-k">
+                <span>Top K</span>
+                <select id="top-k">
+                  <option value="4">4</option>
+                  <option value="6" selected>6</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                </select>
+              </label>
+              <button class="ghost-button" id="clear-chat" type="button">
+                <i data-lucide="eraser"></i>
+                <span>Clear</span>
+              </button>
+              <button
+                class="evidence-toggle"
+                id="evidence-toggle"
+                type="button"
+                aria-haspopup="dialog"
+                aria-controls="evidence-drawer"
+              >
+                <i data-lucide="quote"></i>
+                <span id="evidence-toggle-label">0 citations</span>
+                <small id="evidence-toggle-meta">View evidence</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="messages" id="messages" aria-live="polite">
+            <article class="message assistant-message">
+              <div class="avatar">
+                <i data-lucide="sparkles"></i>
+              </div>
+              <div class="message-body">
+                <div class="message-content plain-content">Ready for a document-scoped question. Upload a file and ask away.</div>
+              </div>
+            </article>
+          </div>
+
+          <form class="composer" id="chat-form">
+            <label class="composer-label" for="question">Question</label>
+            <div class="composer-box">
+              <textarea
+                id="question"
+                rows="3"
+                maxlength="4000"
+                placeholder="Ask about the selected documents..."
+                required
+              ></textarea>
+              <button class="send-button" type="submit" aria-label="Send question">
+                <i data-lucide="send"></i>
+                <span>Send</span>
+              </button>
+            </div>
+            <div class="composer-meta">
+              <span id="scope-label">Scope: all indexed documents</span>
+              <span id="char-count">0 / 4000</span>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <!-- ─── EVIDENCE DRAWER ──────────────────────────── -->
+    <div class="evidence-drawer" id="evidence-drawer" hidden aria-hidden="true">
+      <button class="drawer-scrim" type="button" data-evidence-close aria-label="Close evidence"></button>
+      <aside class="surface evidence-panel" role="dialog" aria-modal="true" aria-labelledby="evidence-title">
+        <div class="drawer-handle" aria-hidden="true"></div>
+        <div class="section-head">
+          <div>
+            <p class="kicker">Evidence</p>
+            <h2 id="evidence-title">Sources</h2>
+          </div>
+          <div class="drawer-actions">
+            <div class="segmented-control" role="tablist" aria-label="Evidence view">
+              <button class="segment active" type="button" data-tab="citations">Cites</button>
+              <button class="segment" type="button" data-tab="trace">Trace</button>
+            </div>
+            <button class="icon-button" id="close-evidence" type="button" aria-label="Close evidence">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="evidence-summary" id="evidence-summary">
+          <span class="summary-pill">Awaiting answer</span>
+          <strong>0 citations</strong>
+        </div>
+
+        <div id="citations" class="citation-list tab-panel active" data-panel="citations" aria-live="polite">
+          <article class="empty-state">
+            <i data-lucide="quote"></i>
+            <strong>No citations</strong>
+            <span>No source snippets yet.</span>
+          </article>
+        </div>
+
+        <div id="retrieval-trace" class="trace-list tab-panel" data-panel="trace" aria-live="polite">
+          <article class="empty-state">
+            <i data-lucide="route"></i>
+            <strong>No trace</strong>
+            <span>No retrieval trace yet.</span>
+          </article>
+        </div>
+      </aside>
+    </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="assertive"></div>
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>
