@@ -22,6 +22,52 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    container_name: rag_assistant_worker
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rag:rag@postgres:5432/rag_assistant
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /app/data/uploads
+    command: ["python", "-m", "app.worker"]
+    volumes:
+      - ./app:/app/app
+      - ./data/uploads:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  bots:
+    build: .
+    container_name: rag_assistant_bots
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rag:rag@postgres:5432/rag_assistant
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /app/data/uploads
+    command: ["python", "-m", "app.bots.runner"]
+    volumes:
+      - ./app:/app/app
+      - ./data/uploads:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
 
   postgres:
     image: postgres:16-alpine
@@ -49,6 +95,15 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
+  redis:
+    image: redis:7-alpine
+    container_name: rag_assistant_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
   qdrant_storage:
+  redis_data:

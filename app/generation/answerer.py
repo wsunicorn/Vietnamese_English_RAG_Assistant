@@ -235,6 +235,7 @@ def resolve_llm_provider(settings: Settings) -> LlmProviderConfig | None:
 
 
 def citation_from_chunk(index: int, chunk: RetrievedChunk) -> dict:
+    metadata = chunk.metadata or {}
     return {
         "citation_id": f"C{index}",
         "document_id": chunk.document_id,
@@ -243,6 +244,10 @@ def citation_from_chunk(index: int, chunk: RetrievedChunk) -> dict:
         "chunk_id": chunk.chunk_id,
         "quote": chunk.text[:650],
         "score": chunk.score,
+        "source_type": metadata.get("source_type"),
+        "source_url": metadata.get("source_url"),
+        "source_title": metadata.get("source_title"),
+        "source_path": metadata.get("source_path") or metadata.get("notion_path"),
     }
 
 

@@ -13,3 +13,11 @@ def test_healthz():
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_realtime_websocket_connects():
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/realtime") as websocket:
+            event = websocket.receive_json()
+
+    assert event["type"] == "connected"

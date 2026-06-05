@@ -1,7 +1,5 @@
 # API Examples
 
-Base URL:
-
 ```bash
 export API_URL=http://localhost:8000
 ```
@@ -12,27 +10,63 @@ export API_URL=http://localhost:8000
 curl "$API_URL/healthz"
 ```
 
-## Upload Document
+## Upload File
+
+Supports PDF, DOCX, TXT, Markdown, and Notion export ZIP.
 
 ```bash
 curl -X POST "$API_URL/documents/upload" \
-  -F "file=@samples/company_policy.pdf"
+  -F "file=@samples/company_handbook.md"
 ```
 
-Expected response:
+## Ingest Website Page
 
-```json
-{
-  "document_id": "0f0e4c2b-6d67-4f6a-b45f-80f2c3c4d83d",
-  "filename": "company_policy.pdf",
-  "status": "indexed",
-  "page_count": 8,
-  "chunk_count": 24,
-  "metadata": {
-    "content_type": "application/pdf",
-    "source_type": "pdf"
-  }
-}
+```bash
+curl -X POST "$API_URL/documents/ingest-url" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/docs/handbook",
+    "mode": "page",
+    "max_pages": 1,
+    "sync_interval_minutes": null
+  }'
+```
+
+## Ingest Sitemap
+
+```bash
+curl -X POST "$API_URL/documents/ingest-url" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/sitemap.xml",
+    "mode": "sitemap",
+    "max_pages": 25,
+    "sync_interval_minutes": 1440
+  }'
+```
+
+## List Sources
+
+```bash
+curl "$API_URL/sources"
+```
+
+## Sync A Source
+
+```bash
+curl -X POST "$API_URL/sources/{source_id}/sync"
+```
+
+## Delete A Source
+
+```bash
+curl -X DELETE "$API_URL/sources/{source_id}" -i
+```
+
+## Reindex All Sources
+
+```bash
+curl -X POST "$API_URL/reindex"
 ```
 
 ## List Documents
@@ -52,50 +86,28 @@ curl -X POST "$API_URL/chat" \
   }'
 ```
 
-## Ask An English Question With Document Filter
+## Ask With Document Filter
 
 ```bash
 curl -X POST "$API_URL/chat" \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What documents are required for reimbursement?",
-    "document_ids": ["0f0e4c2b-6d67-4f6a-b45f-80f2c3c4d83d"]
+    "document_ids": ["document-id-here"]
   }'
 ```
 
-## No-Answer Test
-
-```bash
-curl -X POST "$API_URL/chat" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What was the weather in Tokyo yesterday?"
-  }'
-```
-
-Expected behavior:
-
-- `no_answer` is `true`;
-- `citations` is empty;
-- answer says the information is not available in uploaded documents.
-
-## Submit Feedback
+## Feedback
 
 ```bash
 curl -X POST "$API_URL/feedback" \
   -H "Content-Type: application/json" \
   -d '{
-    "chat_id": "bfa99353-3e8a-4fb5-8f63-760d26296fd4",
+    "chat_id": "chat-id-here",
     "rating": 1,
     "comment": "Citation was correct."
   }'
 ```
-
-Rating convention:
-
-- `1`: helpful;
-- `0`: neutral;
-- `-1`: needs work.
 
 ## Metrics
 
@@ -103,8 +115,18 @@ Rating convention:
 curl "$API_URL/metrics"
 ```
 
-## Delete Document
+## Slack Slash Command Endpoint
+
+Configure Slack slash command URL:
+
+```text
+https://your-public-domain.example/bots/slack/ask
+```
+
+Local curl example:
 
 ```bash
-curl -X DELETE "$API_URL/documents/0f0e4c2b-6d67-4f6a-b45f-80f2c3c4d83d" -i
+curl -X POST "$API_URL/bots/slack/ask" \
+  -F "text=What is the leave policy?" \
+  -F "user_id=U123"
 ```

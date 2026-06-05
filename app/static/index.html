@@ -1,38 +1,218 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RAG Document Assistant — Vietnamese & English</title>
-    <meta name="description" content="Upload documents, ask questions grounded in your sources, and get cited answers. Supports Vietnamese and English with hybrid retrieval." />
-    <meta name="theme-color" content="#0a0f1a" />
+    <title>RAG Document Assistant - Vietnamese & English</title>
+    <meta
+      name="description"
+      content="Upload documents, ingest websites, ask grounded questions, and inspect citations for Vietnamese and English RAG."
+    />
+    <meta name="theme-color" content="#111827" />
+
+    <script>
+      (() => {
+        if ("scrollRestoration" in history) {
+          history.scrollRestoration = "manual";
+        }
+        const param = new URLSearchParams(location.search).get("theme");
+        const saved = localStorage.getItem("rag-theme");
+        const theme =
+          param === "light" || param === "dark"
+            ? param
+            : saved === "light" || saved === "dark"
+              ? saved
+              : "dark";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260605-ui20" />
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js" defer></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   </head>
   <body>
-    <div class="app-shell">
-      <!-- ─── TOPBAR ─────────────────────────────────── -->
-      <header class="topbar">
-        <div class="brand-lockup" aria-label="Vietnamese English RAG Assistant">
-          <span class="brand-mark">
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LANDING PAGE                            -->
+    <!-- ═══════════════════════════════════════ -->
+    <section id="landing-page" class="landing-page">
+      <nav class="landing-nav" id="landing-nav">
+        <a class="landing-brand" href="#home" aria-label="Home">
+          <span class="landing-brand-icon" aria-hidden="true">
             <i data-lucide="brain-circuit"></i>
           </span>
-          <div>
+          <span class="landing-brand-text">RAG Assistant</span>
+        </a>
+        <div class="landing-nav-links">
+          <a href="#home" class="landing-nav-link active" data-nav="home">Home</a>
+          <a href="#app" class="landing-nav-link" data-nav="app">
+            <i data-lucide="message-square" style="width:14px;height:14px"></i>
+            <span>Open App</span>
+          </a>
+          <button class="landing-theme-toggle" id="landing-theme-toggle" type="button" aria-label="Toggle theme">
+            <i data-lucide="moon" class="theme-icon-dark"></i>
+            <i data-lucide="sun" class="theme-icon-light"></i>
+          </button>
+        </div>
+      </nav>
+
+      <div class="hero-section" id="hero-section">
+        <canvas class="particle-canvas" id="particle-canvas" aria-hidden="true"></canvas>
+        <div class="hero-content">
+          <div class="hero-badge reveal">
+            <span class="hero-badge-dot"></span>
+            <span>Powered by Gemini AI</span>
+          </div>
+          <h1 class="hero-title reveal">
+            <span class="hero-gradient-text">Vietnamese &amp; English</span>
+            <br />RAG Document Assistant
+          </h1>
+          <p class="hero-subtitle reveal">
+            Upload documents, ingest websites, ask grounded questions with full citations.
+            Multi-source knowledge base with hybrid retrieval.
+          </p>
+          <div class="hero-cta-group reveal">
+            <a href="#app" class="hero-cta-primary" id="hero-cta">
+              <span>Open Assistant</span>
+              <i data-lucide="arrow-right"></i>
+            </a>
+            <a href="#features" class="hero-cta-secondary">
+              <span>Explore Features</span>
+              <i data-lucide="chevron-down"></i>
+            </a>
+          </div>
+        </div>
+        <div class="hero-image-col reveal">
+          <img src="/static/feature_hero.png" alt="AI-powered document assistant" class="hero-float-image" loading="eager" />
+        </div>
+      </div>
+
+      <section class="features-section" id="features">
+        <div class="features-header reveal">
+          <p class="features-kicker">Capabilities</p>
+          <h2 class="features-title">Everything you need for document intelligence</h2>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card reveal" style="--i:0">
+            <div class="feature-icon-wrap">
+              <i data-lucide="languages"></i>
+            </div>
+            <h3>Multilingual RAG</h3>
+            <p>Full support for Vietnamese and English documents with intelligent language detection and mixed-language queries.</p>
+          </article>
+          <article class="feature-card reveal" style="--i:1">
+            <div class="feature-icon-wrap">
+              <i data-lucide="search-code"></i>
+            </div>
+            <h3>Hybrid Retrieval</h3>
+            <p>Dense + sparse vector search with Reciprocal Rank Fusion. BM25 meets neural embeddings for maximum recall.</p>
+          </article>
+          <article class="feature-card reveal" style="--i:2">
+            <div class="feature-icon-wrap">
+              <i data-lucide="book-open-check"></i>
+            </div>
+            <h3>Live Citations</h3>
+            <p>Every answer is grounded with source citations. Inspect retrieval traces, scores, and evidence in real-time.</p>
+          </article>
+          <article class="feature-card reveal" style="--i:3">
+            <div class="feature-icon-wrap">
+              <i data-lucide="globe-2"></i>
+            </div>
+            <h3>Web Ingestion</h3>
+            <p>Ingest entire websites or sitemaps with scheduled auto-sync. Keep your knowledge base fresh automatically.</p>
+          </article>
+          <article class="feature-card reveal" style="--i:4">
+            <div class="feature-icon-wrap">
+              <i data-lucide="database"></i>
+            </div>
+            <h3>Multi-Source</h3>
+            <p>PDF, DOCX, Markdown, Notion exports, web pages — all unified in a single searchable knowledge base.</p>
+          </article>
+          <article class="feature-card reveal" style="--i:5">
+            <div class="feature-icon-wrap">
+              <i data-lucide="activity"></i>
+            </div>
+            <h3>Real-time Updates</h3>
+            <p>WebSocket-powered live dashboard. Watch sources index, track metrics, and get instant notifications.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="tech-section reveal">
+        <p class="features-kicker">Built With</p>
+        <h2 class="features-title">Modern, battle-tested technology stack</h2>
+        <div class="tech-marquee" aria-label="Technology stack">
+          <div class="tech-track">
+            <div class="tech-chip"><i data-lucide="sparkles"></i><span>Gemini AI</span></div>
+            <div class="tech-chip"><i data-lucide="database"></i><span>Qdrant</span></div>
+            <div class="tech-chip"><i data-lucide="zap"></i><span>FastAPI</span></div>
+            <div class="tech-chip"><i data-lucide="server"></i><span>PostgreSQL</span></div>
+            <div class="tech-chip"><i data-lucide="layers"></i><span>Redis</span></div>
+            <div class="tech-chip"><i data-lucide="box"></i><span>Docker</span></div>
+            <div class="tech-chip"><i data-lucide="code-2"></i><span>Python</span></div>
+            <div class="tech-chip"><i data-lucide="brain-circuit"></i><span>Embeddings</span></div>
+            <!-- Duplicated for seamless loop -->
+            <div class="tech-chip"><i data-lucide="sparkles"></i><span>Gemini AI</span></div>
+            <div class="tech-chip"><i data-lucide="database"></i><span>Qdrant</span></div>
+            <div class="tech-chip"><i data-lucide="zap"></i><span>FastAPI</span></div>
+            <div class="tech-chip"><i data-lucide="server"></i><span>PostgreSQL</span></div>
+            <div class="tech-chip"><i data-lucide="layers"></i><span>Redis</span></div>
+            <div class="tech-chip"><i data-lucide="box"></i><span>Docker</span></div>
+            <div class="tech-chip"><i data-lucide="code-2"></i><span>Python</span></div>
+            <div class="tech-chip"><i data-lucide="brain-circuit"></i><span>Embeddings</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section reveal">
+        <div class="cta-card">
+          <img src="/static/hero_bg.png" alt="" class="cta-bg-image" aria-hidden="true" loading="lazy" />
+          <div class="cta-content">
+            <h2>Ready to explore your documents?</h2>
+            <p>Upload your first document and start asking intelligent questions with full citation support.</p>
+            <a href="#app" class="hero-cta-primary cta-large">
+              <span>Launch Assistant</span>
+              <i data-lucide="rocket"></i>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <footer class="landing-footer">
+        <p>RAG Document Assistant &copy; 2025 &mdash; Multilingual knowledge base with citations.</p>
+      </footer>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- APP WORKSPACE                          -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="app-shell" id="app-page" hidden>
+      <header class="topbar">
+        <div class="brand-lockup" aria-label="Vietnamese English RAG Assistant">
+          <a href="#home" class="brand-home-link" aria-label="Back to home">
+            <span class="brand-mark" aria-hidden="true">
+              <i data-lucide="brain-circuit"></i>
+            </span>
+          </a>
+          <div class="brand-copy">
             <p class="kicker">Document AI</p>
             <h1>RAG Assistant</h1>
+            <p>Multi-source knowledge base with citations.</p>
           </div>
         </div>
 
         <section class="metrics-strip" id="metrics" aria-label="System metrics">
+          <article class="metric-card skeleton">
+            <span>Sources</span>
+            <strong>--</strong>
+          </article>
           <article class="metric-card skeleton">
             <span>Documents</span>
             <strong>--</strong>
@@ -42,68 +222,187 @@
             <strong>--</strong>
           </article>
           <article class="metric-card skeleton">
-            <span>Chats</span>
-            <strong>--</strong>
-          </article>
-          <article class="metric-card skeleton">
             <span>Latency</span>
             <strong>--</strong>
           </article>
         </section>
+
+        <div class="topbar-actions" aria-label="Display controls">
+          <button class="tool-button" id="rail-toggle" type="button" aria-controls="document-rail" aria-expanded="true" aria-label="Toggle workspace">
+            <i data-lucide="panel-left"></i>
+            <span class="rail-toggle-text">Workspace</span>
+          </button>
+          <button class="tool-button theme-toggle-compact" id="theme-toggle" type="button" aria-label="Toggle theme">
+            <i data-lucide="moon" class="theme-icon-dark"></i>
+            <i data-lucide="sun" class="theme-icon-light"></i>
+          </button>
+          <div class="realtime-status" id="realtime-status" role="status" aria-live="polite">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span>Connecting</span>
+          </div>
+        </div>
       </header>
 
-      <!-- ─── WORKSPACE ──────────────────────────────── -->
       <main class="workspace">
-        <!-- ── Left Rail: Documents ─────────────────── -->
-        <aside class="surface document-rail" aria-label="Documents">
+        <button class="rail-scrim" id="rail-scrim" type="button" aria-label="Close sources panel"></button>
+        <aside class="surface document-rail" id="document-rail" aria-label="Documents and sources">
           <div class="section-head">
             <div>
-              <p class="kicker">Corpus</p>
-              <h2>Documents</h2>
+              <p class="kicker">Workspace</p>
+              <h2>Knowledge base</h2>
             </div>
-            <button class="icon-button" id="refresh-documents" type="button" aria-label="Refresh documents">
-              <i data-lucide="refresh-cw"></i>
+            <div class="rail-head-actions">
+              <button class="icon-button" id="refresh-documents" type="button" aria-label="Refresh documents">
+                <i data-lucide="refresh-cw"></i>
+              </button>
+              <button class="icon-button rail-close" id="close-rail" type="button" aria-label="Close sources panel">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="rail-tabs" role="tablist" aria-label="Knowledge base sections">
+            <button class="rail-tab active" type="button" data-rail-tab="sources" role="tab" aria-selected="true">
+              <i data-lucide="database"></i>
+              <span>Sources</span>
+            </button>
+            <button class="rail-tab" type="button" data-rail-tab="documents" role="tab" aria-selected="false">
+              <i data-lucide="files"></i>
+              <span>Docs</span>
+            </button>
+            <button class="rail-tab" type="button" data-rail-tab="history" role="tab" aria-selected="false">
+              <i data-lucide="history"></i>
+              <span>History</span>
             </button>
           </div>
 
-          <form class="upload-dropzone" id="upload-form">
-            <input id="file-input" name="file" type="file" accept=".pdf,.docx,.txt" />
-            <label for="file-input" class="dropzone-label">
-              <span class="dropzone-icon">
-                <i data-lucide="file-up"></i>
-              </span>
-              <span class="dropzone-title">Upload source file</span>
-              <span class="dropzone-meta">PDF, DOCX, TXT up to 25 MB</span>
-            </label>
-            <div class="upload-actions">
-              <button class="primary-button" type="submit" id="upload-submit-btn">
-                <i data-lucide="upload-cloud"></i>
-                <span>Index</span>
-              </button>
-              <p id="upload-status" class="status-text">Ready</p>
-            </div>
-          </form>
+          <div class="rail-panels">
+            <section class="rail-panel active" data-rail-panel="sources" role="tabpanel">
+              <details class="rail-disclosure">
+                <summary>
+                  <span>
+                    <i data-lucide="file-up"></i>
+                    File upload
+                  </span>
+                  <i data-lucide="chevron-down"></i>
+                </summary>
+                <form class="upload-dropzone" id="upload-form">
+                  <input id="file-input" name="file" type="file" accept=".pdf,.docx,.txt,.md,.markdown,.zip" />
+                  <label for="file-input" class="dropzone-label">
+                    <span class="dropzone-icon" aria-hidden="true">
+                      <i data-lucide="file-up"></i>
+                    </span>
+                    <span class="dropzone-title">Upload source file</span>
+                    <span class="dropzone-meta">PDF, DOCX, TXT, Markdown, Notion ZIP up to 25 MB</span>
+                  </label>
+                  <div class="upload-actions">
+                    <button class="primary-button" type="submit" id="upload-submit-btn">
+                      <i data-lucide="upload-cloud"></i>
+                      <span>Index file</span>
+                    </button>
+                    <p id="upload-status" class="status-text">Ready</p>
+                  </div>
+                </form>
+              </details>
 
-          <div class="rail-toolbar">
-            <span id="selected-count">All documents</span>
-            <button class="text-button" id="clear-selection" type="button">Clear</button>
-          </div>
+              <details class="rail-disclosure">
+                <summary>
+                  <span>
+                    <i data-lucide="globe-2"></i>
+                    Web source
+                  </span>
+                  <i data-lucide="chevron-down"></i>
+                </summary>
+                <form class="url-ingest-form" id="url-ingest-form">
+                  <label class="input-stack" for="source-url">
+                    <span>URL</span>
+                    <input id="source-url" type="url" placeholder="https://example.com/sitemap.xml" required />
+                  </label>
+                  <div class="url-grid">
+                    <label class="input-stack" for="source-mode">
+                      <span>Mode</span>
+                      <select id="source-mode">
+                        <option value="page">Page</option>
+                        <option value="sitemap">Sitemap</option>
+                      </select>
+                    </label>
+                    <label class="input-stack" for="source-max-pages">
+                      <span>Max pages</span>
+                      <input id="source-max-pages" type="number" min="1" max="200" value="20" />
+                    </label>
+                  </div>
+                  <label class="input-stack" for="source-sync-interval">
+                    <span>Sync minutes</span>
+                    <input id="source-sync-interval" type="number" min="5" placeholder="Manual only" />
+                  </label>
+                  <div class="upload-actions">
+                    <button class="primary-button" type="submit">
+                      <i data-lucide="globe-2"></i>
+                      <span>Ingest URL</span>
+                    </button>
+                    <p id="url-status" class="status-text">Ready</p>
+                  </div>
+                </form>
+              </details>
 
-          <div class="document-list" id="document-list" aria-live="polite">
-            <article class="empty-state">
-              <i data-lucide="folder-open"></i>
-              <strong>No documents</strong>
-              <span>Corpus is empty.</span>
-            </article>
+              <section class="sources-panel" aria-label="Source sync dashboard">
+                <div class="mini-section-head">
+                  <div>
+                    <p class="kicker">Sync</p>
+                    <strong>Data sources</strong>
+                  </div>
+                  <button class="icon-button" id="reindex-all" type="button" aria-label="Reindex all sources">
+                    <i data-lucide="refresh-ccw"></i>
+                  </button>
+                </div>
+                <div class="source-list" id="source-list" aria-live="polite">
+                  <article class="empty-state">
+                    <i data-lucide="database"></i>
+                    <strong>No sources</strong>
+                    <span>Upload or ingest a source.</span>
+                  </article>
+                </div>
+              </section>
+            </section>
+
+            <section class="rail-panel" data-rail-panel="documents" role="tabpanel">
+              <div class="rail-toolbar">
+                <span id="selected-count">All documents</span>
+                <button class="text-button" id="clear-selection" type="button">Clear</button>
+              </div>
+              <div class="document-list" id="document-list" aria-live="polite">
+                <article class="empty-state">
+                  <i data-lucide="folder-open"></i>
+                  <strong>No documents</strong>
+                  <span>Corpus is empty.</span>
+                </article>
+              </div>
+            </section>
+
+            <section class="rail-panel" data-rail-panel="history" role="tabpanel">
+              <div class="history-toolbar">
+                <div>
+                  <p class="kicker">Recent</p>
+                  <strong>Chat history</strong>
+                </div>
+                <button class="text-button" id="clear-history" type="button">Clear</button>
+              </div>
+              <div class="history-list" id="history-list" aria-live="polite">
+                <article class="empty-state">
+                  <i data-lucide="history"></i>
+                  <strong>No saved chats</strong>
+                  <span>Completed answers will appear here.</span>
+                </article>
+              </div>
+            </section>
           </div>
         </aside>
 
-        <!-- ── Main: Chat ───────────────────────────── -->
         <section class="surface chat-surface" aria-label="Grounded chat">
           <div class="section-head chat-head">
             <div>
               <p class="kicker">Grounded answer</p>
-              <h2>Chat</h2>
+              <h2>Ask your knowledge base</h2>
             </div>
             <div class="head-actions">
               <label class="topk-control" for="top-k">
@@ -126,7 +425,7 @@
                 aria-haspopup="dialog"
                 aria-controls="evidence-drawer"
               >
-                <i data-lucide="quote"></i>
+                <i data-lucide="book-open-check"></i>
                 <span id="evidence-toggle-label">0 citations</span>
                 <small id="evidence-toggle-meta">View evidence</small>
               </button>
@@ -139,13 +438,12 @@
                 <i data-lucide="sparkles"></i>
               </div>
               <div class="message-body">
-                <div class="message-content plain-content">Ready for a document-scoped question. Upload a file and ask away.</div>
+                <div class="message-content plain-content">Ready for a grounded question.</div>
               </div>
             </article>
           </div>
 
           <form class="composer" id="chat-form">
-            <label class="composer-label" for="question">Question</label>
             <div class="composer-box">
               <textarea
                 id="question"
@@ -155,7 +453,7 @@
                 required
               ></textarea>
               <button class="send-button" type="submit" aria-label="Send question">
-                <i data-lucide="send"></i>
+                <i data-lucide="send-horizontal"></i>
                 <span>Send</span>
               </button>
             </div>
@@ -168,7 +466,6 @@
       </main>
     </div>
 
-    <!-- ─── EVIDENCE DRAWER ──────────────────────────── -->
     <div class="evidence-drawer" id="evidence-drawer" hidden aria-hidden="true">
       <button class="drawer-scrim" type="button" data-evidence-close aria-label="Close evidence"></button>
       <aside class="surface evidence-panel" role="dialog" aria-modal="true" aria-labelledby="evidence-title">
@@ -176,7 +473,7 @@
         <div class="section-head">
           <div>
             <p class="kicker">Evidence</p>
-            <h2 id="evidence-title">Sources</h2>
+            <h2 id="evidence-title">Citations</h2>
           </div>
           <div class="drawer-actions">
             <div class="segmented-control" role="tablist" aria-label="Evidence view">
@@ -213,6 +510,6 @@
     </div>
 
     <div class="toast-stack" id="toast-stack" aria-live="assertive"></div>
-    <script src="/static/app.js" type="module"></script>
+    <script src="/static/app.js?v=20260605-ui20" type="module"></script>
   </body>
 </html>

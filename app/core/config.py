@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     qdrant_dense_vector_name: str = "dense"
     qdrant_sparse_vector_name: str = "sparse"
 
+    redis_url: str = "redis://redis:6379/0"
+    redis_queue_name: str = "rag:sync-jobs"
+    worker_poll_seconds: int = 5
+    scheduled_sync_check_seconds: int = 60
+
     llm_provider: str = "gemini"
     embedding_provider: str = "gemini"
 
@@ -57,7 +62,22 @@ class Settings(BaseSettings):
     chunk_overlap_tokens: int = 120
     retrieval_top_k: int = 6
     retrieval_prefetch_limit: int = 30
+    retrieval_mode: str = "hybrid"
+    retrieval_sparse_fallback: bool = True
     no_answer_min_score: float = 0.16
+    reranker_provider: str = "none"
+    reranker_model: str | None = None
+    cohere_api_key: str | None = None
+
+    web_ingest_timeout_seconds: int = 20
+    web_ingest_max_pages: int = 50
+    web_ingest_user_agent: str = "VietnameseEnglishRAGAssistant/0.2"
+
+    slack_signing_secret: str | None = None
+    slack_bot_token: str | None = None
+    slack_verification_token: str | None = None
+    discord_bot_token: str | None = None
+    telegram_bot_token: str | None = None
 
     input_cost_per_1m_tokens: float = Field(default=0.0, ge=0)
     output_cost_per_1m_tokens: float = Field(default=0.0, ge=0)

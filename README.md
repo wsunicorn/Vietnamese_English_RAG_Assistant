@@ -1,78 +1,53 @@
-# Vietnamese/English RAG Document Assistant
+# Document AI Assistant with Multi-Source RAG, Citations and Chat Integration
 
-Flagship portfolio project: a production-shaped document AI assistant that can ingest PDFs, DOCX, and TXT files, index them with metadata, retrieve with hybrid search, answer in Vietnamese or English, and return citations.
+Flagship portfolio project: an end-to-end Vietnamese/English knowledge-base assistant for internal documents, Markdown/Notion exports, websites, and sitemaps. It is designed to prove real RAG engineering, not just an LLM wrapper.
 
-## Why This Project Stands Out
+## What It Solves
 
-- Real ingestion pipeline, not just an LLM wrapper.
-- Page/chunk metadata preserved for citations.
-- Hybrid retrieval with dense embeddings plus BM25 sparse search in Qdrant.
-- Grounded answer generation with explicit no-answer handling.
-- Feedback and metrics endpoints for product iteration.
-- Docker Compose stack with FastAPI, PostgreSQL, and Qdrant.
-- Portfolio-ready docs, API examples, evaluation plan, and demo UI.
+Teams often keep knowledge across PDFs, DOCX files, Notion exports, Markdown docs, and internal websites. People waste time searching, asking coworkers, or rereading docs. This app lets users ask questions in Vietnamese or English, returns grounded answers with citations, and says it cannot find an answer when evidence is weak.
+
+## Current Features
+
+- Upload PDF, DOCX, TXT, Markdown, and Notion export ZIP.
+- Ingest website pages and sitemaps through a Redis-backed worker.
+- Parse text and metadata, including page, section, URL, source path, and source type.
+- Chunk documents with metadata.
+- Store dense vectors and BM25 sparse vectors in Qdrant.
+- Hybrid retrieval with optional dense/sparse eval modes and optional Cohere reranker.
+- Grounded chat endpoint with citations and no-answer handling.
+- Feedback endpoint and metrics endpoint.
+- Source dashboard UI with manual sync, delete, URL ingestion, compact evidence drawer, and Markdown answer rendering.
+- Optional Slack slash command endpoint and optional Discord/Telegram bot runners.
+- Docker Compose with FastAPI, worker, bots, PostgreSQL, Qdrant, and Redis.
 
 ## Tech Stack
 
-- Backend: Python 3.12, FastAPI, Pydantic v2, SQLAlchemy async.
-- Document parsing: Docling, pypdf, python-docx.
-- Retrieval: Gemini/OpenAI/custom embeddings, FastEmbed BM25 sparse vectors, Qdrant hybrid search.
-- Generation: provider-agnostic OpenAI-compatible chat API; Gemini is the default free-friendly option.
-- Persistence: PostgreSQL for metadata, chunks, chat logs, feedback, and metrics.
-- UI: FastAPI-served HTML/CSS/vanilla JavaScript.
-- Tooling: Docker, Docker Compose, pytest, Ruff, Alembic.
-
-## Architecture
-
-```text
-User/UI or API client
-        |
-        v
-FastAPI endpoints
-        |
-        +--> Upload: file validation -> parsing -> chunking -> embeddings
-        |                                      |             |
-        |                                      v             v
-        |                               PostgreSQL       Qdrant
-        |
-        +--> Chat: question -> hybrid retrieval -> grounded generation -> citations
-        |                         |                    |
-        |                         v                    v
-        |                      Qdrant              Gemini/Groq/OpenAI/custom API
-        |
-        +--> Feedback and metrics -> PostgreSQL
-```
-
-Read the deeper design in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Python 3.12, FastAPI, Pydantic v2, SQLAlchemy async.
+- Parsing: Docling fallback, pypdf, python-docx, BeautifulSoup, Markdown/Notion ZIP parsing.
+- Retrieval: Qdrant dense+sparse hybrid search, FastEmbed BM25, configurable embedding providers.
+- Generation: Gemini/OpenAI/Groq/OpenAI-compatible chat providers.
+- Worker: Redis queue plus PostgreSQL sync job tracking.
+- UI: FastAPI-served HTML/CSS/vanilla JS.
+- Bots: Slack slash endpoint, Discord.py, python-telegram-bot.
+- Tests: pytest.
 
 ## Quickstart
 
-1. Copy environment variables:
+1. Copy env:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Add a provider key in `.env`.
+2. Add a free-friendly provider key:
 
-Recommended free-friendly Gemini setup:
-
-```bash
+```env
 LLM_PROVIDER=gemini
 EMBEDDING_PROVIDER=gemini
 GEMINI_API_KEY=your_google_ai_studio_key
 ```
 
-Fast Groq chat plus Gemini embeddings:
-
-```bash
-LLM_PROVIDER=groq
-GROQ_API_KEY=your_groq_key
-EMBEDDING_PROVIDER=gemini
-GEMINI_API_KEY=your_google_ai_studio_key
-```
-
-3. Run the stack:
+3. Run:
 
 ```bash
 docker compose up --build
@@ -80,40 +55,59 @@ docker compose up --build
 
 4. Open:
 
-- Demo UI: <http://localhost:8000>
-- Swagger docs: <http://localhost:8000/docs>
-- Qdrant dashboard/API: <http://localhost:6333/dashboard>
-
-The app has deterministic local embedding/answer fallback when API keys are empty. For a portfolio demo, use Gemini, OpenAI, or another real provider so answers are generated by an actual model.
-
-See [docs/PROVIDERS.md](docs/PROVIDERS.md) for provider combinations and `.env` examples.
+- UI: <http://localhost:8000>
+- Swagger: <http://localhost:8000/docs>
+- Qdrant dashboard: <http://localhost:6333/dashboard>
 
 ## API Surface
 
 - `POST /documents/upload`
+- `POST /documents/ingest-url`
 - `GET /documents`
+- `GET /sources`
+- `POST /sources/{source_id}/sync`
+- `DELETE /sources/{source_id}`
 - `DELETE /documents/{document_id}`
+- `POST /reindex`
 - `POST /chat`
 - `POST /feedback`
 - `GET /metrics`
-- `GET /healthz`
+- `POST /bots/slack/ask`
 
-See runnable curl examples in [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md).
+Runnable examples are in [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md).
 
-## Evaluation
+## Architecture
 
-The evaluation plan tracks retrieval quality, faithfulness, answer relevance, citation quality, and no-answer accuracy. Start with the sample bilingual golden set in [evals/golden_set.jsonl](evals/golden_set.jsonl), then expand it with documents from the demo corpus.
+```text
+UI / API / Bots
+      |
+      v
+FastAPI routes -> AskService -> hybrid retrieval -> grounded generation
+      |              |              |                    |
+      |              |              v                    v
+      |              |           Qdrant             Gemini/OpenAI/etc.
+      |              v
+      |          PostgreSQL logs/feedback/metrics
+      |
+      +-> upload / ingest-url -> source/job record -> Redis queue
+                                      |
+                                      v
+                                Worker service
+                                      |
+                                      v
+                         parse -> chunk -> embed -> Qdrant/Postgres
+```
 
-See [docs/EVALUATION.md](docs/EVALUATION.md).
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Portfolio Assets To Add
+## Portfolio Deliverables
 
-- Screenshots: upload view, chat with citations, no-answer behavior, metrics panel.
-- Evaluation table: baseline dense-only vs hybrid vs hybrid + reranker.
-- Demo video: 2-4 minutes covering upload, Vietnamese question, English question, citation inspection, no-answer, feedback.
-- Case study title: **Document AI Assistant with Citations and Vietnamese/English RAG**.
+- README, architecture docs, API examples, evaluation plan.
+- Screenshots: upload, web source sync, chat answer, evidence drawer, no-answer, metrics.
+- Evaluation table: dense vs sparse vs hybrid vs hybrid+reranker.
+- Demo video: 2-4 minutes covering upload, URL/sitemap ingest, Vietnamese question, English question, citations, no-answer, feedback, bot command.
 
-## Development Commands
+## Development
 
 ```bash
 python -m venv .venv
@@ -124,12 +118,6 @@ ruff check .
 fastapi dev app/main.py
 ```
 
-On Windows PowerShell, activate with:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
 ## Current Status
 
-Use [CHECKLIST.md](CHECKLIST.md) as the source of truth for progress.
+Use [CHECKLIST.md](CHECKLIST.md) as the source of truth. Do not commit `.env`.

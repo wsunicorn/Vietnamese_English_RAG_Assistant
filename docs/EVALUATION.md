@@ -2,73 +2,59 @@
 
 ## Goal
 
-Show that this assistant is not just a demo wrapper. It should be measured for retrieval quality, answer grounding, citation accuracy, and no-answer behavior in Vietnamese and English.
+Show that this assistant is stronger than a basic GPT wrapper by measuring retrieval quality, citation quality, answer faithfulness, no-answer behavior, latency, and cost.
 
-## Golden Set Format
+## Modes To Compare
 
-Use JSONL rows:
+- Dense-only: `RETRIEVAL_MODE=dense`
+- Sparse-only: `RETRIEVAL_MODE=sparse`
+- Hybrid: `RETRIEVAL_MODE=hybrid`
+- Hybrid + reranker: `RETRIEVAL_MODE=hybrid_rerank`, `RERANKER_PROVIDER=cohere`
 
-```json
-{
-  "id": "vi_policy_001",
-  "question": "Nhan vien duoc nghi phep nam bao nhieu ngay?",
-  "expected_answer": "Nhan vien duoc nghi 12 ngay phep nam.",
-  "expected_document": "employee_handbook_vi.pdf",
-  "expected_pages": [3],
-  "should_answer": true,
-  "language": "vi"
-}
-```
+## Dataset Format
 
-For no-answer rows:
+Use JSONL in `evals/golden_set.jsonl`:
 
 ```json
-{
-  "id": "no_answer_001",
-  "question": "CEO cua OpenAI hien tai la ai?",
-  "expected_answer": null,
-  "expected_document": null,
-  "expected_pages": [],
-  "should_answer": false,
-  "language": "vi"
-}
+{"question":"...","expected_answer":"...","expected_citations":["..."],"should_answer":true}
 ```
+
+Expand with:
+
+- Vietnamese policy questions;
+- English handbook questions;
+- Markdown/Notion export questions;
+- website/sitemap questions;
+- out-of-scope no-answer questions.
 
 ## Metrics
 
-- Context precision: retrieved chunks are relevant.
-- Context recall: expected evidence appears in retrieved chunks.
-- Faithfulness: final answer is supported by retrieved context.
-- Response relevancy: answer directly addresses the question.
-- Citation accuracy: cited document/page/chunk contains the claim.
-- No-answer accuracy: model refuses when documents do not contain the answer.
-- Latency: upload indexing time and chat response time.
-- Cost: token and estimated USD cost per chat.
+- Context precision.
+- Context recall.
+- Faithfulness.
+- Answer relevance.
+- Citation accuracy.
+- No-answer accuracy.
+- Average latency.
+- Estimated cost.
 
-## Baseline Matrix
+## Result Table Template
 
-| Variant | Context Precision | Context Recall | Faithfulness | No-Answer Accuracy | P95 Latency |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Dense only | TBD | TBD | TBD | TBD | TBD |
-| Hybrid Qdrant | TBD | TBD | TBD | TBD | TBD |
-| Hybrid + reranker | TBD | TBD | TBD | TBD | TBD |
+| Mode | Context Precision | Context Recall | Citation Accuracy | No-Answer Accuracy | Avg Latency |
+|---|---:|---:|---:|---:|---:|
+| Dense | TBD | TBD | TBD | TBD | TBD |
+| Sparse | TBD | TBD | TBD | TBD | TBD |
+| Hybrid | TBD | TBD | TBD | TBD | TBD |
+| Hybrid + Reranker | TBD | TBD | TBD | TBD | TBD |
 
-## How To Run
+## Demo Acceptance
 
-1. Start the stack.
-2. Upload the evaluation corpus.
-3. Run:
-
-```bash
-python scripts/evaluate_rag.py --api-url http://localhost:8000 --dataset evals/golden_set.jsonl
-```
-
-4. Paste the final table into this document.
-
-## Acceptance Targets
-
-- Context recall: at least 0.85 on the first curated corpus.
-- Faithfulness: at least 0.90 after prompt tuning.
-- No-answer accuracy: at least 0.90.
-- Citation accuracy: at least 0.90.
-- P95 chat latency: under 8 seconds for small corpora with the configured LLM provider.
+- Upload Markdown and Notion ZIP.
+- Ingest a public documentation page.
+- Ingest a sitemap with `max_pages`.
+- Ask one Vietnamese and one English question.
+- Show citation drawer with file/page or URL/path.
+- Ask an out-of-scope question and verify no-answer.
+- Submit feedback.
+- Show metrics and source dashboard.
+- Trigger `/ask` through one configured bot or Slack endpoint.

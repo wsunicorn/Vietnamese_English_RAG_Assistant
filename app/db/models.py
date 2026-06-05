@@ -21,6 +21,27 @@ def mutable_json_list():
     return MutableList.as_mutable(JSON().with_variant(JSONB, "postgresql"))
 
 
+class DataSourceORM(Base):
+    __tablename__ = "data_sources"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    uri: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued")
+    sync_interval_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[dict] = mapped_column(mutable_json_dict(), default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+    documents: Mapped[list["DocumentORM"]] = relationship(
+        back_populates="source", cascade="all, delete-orphan"
+    )
+    jobs: Mapped[list["SyncJobORM"]] = relationship(back_populates="source")
+
+
 class DocumentORM(Base):
     __tablename__ = "documents"
 
@@ -28,6 +49,9 @@ class DocumentORM(Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     content_type: Mapped[str] = mapped_column(String(120), nullable=False)
     source_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    source_id: Mapped[str | None] = mapped_column(
+        ForeignKey("data_sources.id", ondelete="CASCADE"), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="processing")
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str | None] = mapped_column(String(24), nullable=True)
@@ -40,6 +64,7 @@ class DocumentORM(Base):
     chunks: Mapped[list["ChunkORM"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
+    source: Mapped[DataSourceORM | None] = relationship(back_populates="documents")
 
 
 class ChunkORM(Base):
@@ -99,3 +124,21 @@ class RequestMetricORM(Base):
     estimated_cost_usd: Mapped[float] = mapped_column(Numeric(12, 6), default=0)
     metadata_json: Mapped[dict] = mapped_column(mutable_json_dict(), default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+class SyncJobORM(Base):
+    __tablename__ = "sync_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    job_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_id: Mapped[str | None] = mapped_column(
+        ForeignKey("data_sources.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued")
+    payload_json: Mapped[dict] = mapped_column(mutable_json_dict(), default=dict)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    source: Mapped[DataSourceORM | None] = relationship(back_populates="jobs")

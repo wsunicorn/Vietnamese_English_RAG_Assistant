@@ -105,6 +105,11 @@ class QdrantHybridStore:
                     payload={
                         "chunk_id": chunk.id,
                         "document_id": chunk.document_id,
+                        "source_id": chunk.metadata.get("source_id"),
+                        "source_type": chunk.metadata.get("source_type"),
+                        "source_url": chunk.metadata.get("source_url"),
+                        "source_title": chunk.metadata.get("source_title"),
+                        "source_path": chunk.metadata.get("source_path"),
                         "filename": chunk.metadata.get("filename", ""),
                         "text": chunk.text,
                         "page": chunk.page,
@@ -125,10 +130,11 @@ class QdrantHybridStore:
         self,
         *,
         query: str,
-        dense_vector: list[float],
+        dense_vector: list[float] | None,
         top_k: int,
         prefetch_limit: int,
         document_ids: list[str] | None = None,
+        force_sparse: bool = False,
     ) -> list[RetrievedChunk]:
         from qdrant_client import models
 
@@ -144,29 +150,54 @@ class QdrantHybridStore:
                 ]
             )
 
-        result = self.client.query_points(
-            collection_name=self.settings.qdrant_collection,
-            prefetch=[
-                models.Prefetch(
-                    query=dense_vector,
-                    using=self.settings.qdrant_dense_vector_name,
-                    limit=prefetch_limit,
-                    filter=filters,
-                ),
-                models.Prefetch(
-                    query=models.SparseVector(
-                        indices=sparse_query.indices.tolist(),
-                        values=sparse_query.values.tolist(),
-                    ),
-                    using=self.settings.qdrant_sparse_vector_name,
-                    limit=prefetch_limit,
-                    filter=filters,
-                ),
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
-            limit=top_k,
-            with_payload=True,
+        mode = (self.settings.retrieval_mode or "hybrid").lower()
+        sparse_vector = models.SparseVector(
+            indices=sparse_query.indices.tolist(),
+            values=sparse_query.values.tolist(),
         )
+        if mode == "dense":
+            if dense_vector is None:
+                raise ValueError("Dense retrieval requires a dense query vector.")
+            result = self.client.query_points(
+                collection_name=self.settings.qdrant_collection,
+                query=dense_vector,
+                using=self.settings.qdrant_dense_vector_name,
+                query_filter=filters,
+                limit=top_k,
+                with_payload=True,
+            )
+        elif force_sparse or mode == "sparse":
+            result = self.client.query_points(
+                collection_name=self.settings.qdrant_collection,
+                query=sparse_vector,
+                using=self.settings.qdrant_sparse_vector_name,
+                query_filter=filters,
+                limit=top_k,
+                with_payload=True,
+            )
+        else:
+            if dense_vector is None:
+                raise ValueError("Hybrid retrieval requires a dense query vector.")
+            result = self.client.query_points(
+                collection_name=self.settings.qdrant_collection,
+                prefetch=[
+                    models.Prefetch(
+                        query=dense_vector,
+                        using=self.settings.qdrant_dense_vector_name,
+                        limit=prefetch_limit,
+                        filter=filters,
+                    ),
+                    models.Prefetch(
+                        query=sparse_vector,
+                        using=self.settings.qdrant_sparse_vector_name,
+                        limit=prefetch_limit,
+                        filter=filters,
+                    ),
+                ],
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                limit=top_k,
+                with_payload=True,
+            )
 
         chunks: list[RetrievedChunk] = []
         for point in result.points:
@@ -196,6 +227,24 @@ class QdrantHybridStore:
                         models.FieldCondition(
                             key="document_id",
                             match=models.MatchValue(value=document_id),
+                        )
+                    ]
+                )
+            ),
+            wait=True,
+        )
+
+    async def delete_source(self, source_id: str) -> None:
+        from qdrant_client import models
+
+        self.client.delete(
+            collection_name=self.settings.qdrant_collection,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="source_id",
+                            match=models.MatchValue(value=source_id),
                         )
                     ]
                 )

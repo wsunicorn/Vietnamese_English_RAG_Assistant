@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 
+from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
@@ -27,6 +28,18 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 async def init_db() -> None:
     async with get_engine().begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        await connection.run_sync(ensure_lightweight_schema_updates)
+
+
+def ensure_lightweight_schema_updates(connection) -> None:
+    inspector = inspect(connection)
+    tables = set(inspector.get_table_names())
+    if "documents" not in tables:
+        return
+
+    document_columns = {column["name"] for column in inspector.get_columns("documents")}
+    if "source_id" not in document_columns:
+        connection.exec_driver_sql("ALTER TABLE documents ADD COLUMN source_id VARCHAR(36)")
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:

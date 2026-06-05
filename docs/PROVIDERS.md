@@ -74,6 +74,29 @@ EMBEDDING_DIMENSIONS=3072
 
 This mode is deterministic and useful for tests, but it is not portfolio-quality model output.
 
+## Optional Reranker
+
+Hybrid retrieval is the default. To test a reranked pipeline:
+
+```env
+RETRIEVAL_MODE=hybrid_rerank
+RERANKER_PROVIDER=cohere
+RERANKER_MODEL=rerank-v3.5
+COHERE_API_KEY=your_cohere_key
+```
+
+Leave `RERANKER_PROVIDER=none` for the fastest free-friendly demo.
+
+## Optional Bot Tokens
+
+```env
+SLACK_VERIFICATION_TOKEN=
+DISCORD_BOT_TOKEN=
+TELEGRAM_BOT_TOKEN=
+```
+
+See [CHAT_INTEGRATIONS.md](CHAT_INTEGRATIONS.md).
+
 ## Important Qdrant Note
 
 Qdrant collections are created with a fixed dense vector size. If you switch embedding models and the new model returns a different vector dimension, recreate the collection or Docker volume before indexing new documents.

@@ -2,99 +2,92 @@
 
 ## Goal
 
-Build a document AI assistant that proves full RAG engineering skill: ingestion, metadata, chunking, hybrid retrieval, grounded generation, citations, feedback, metrics, and Dockerized operations.
+Build a production-shaped multi-source RAG assistant for Vietnamese/English knowledge bases: files, Markdown, Notion exports, websites, sitemaps, and chat integrations.
 
 ## Services
 
-- FastAPI app: owns API, demo UI, ingestion orchestration, retrieval orchestration, and answer generation.
-- PostgreSQL: stores document metadata, chunk metadata, chat logs, feedback, and metrics.
-- Qdrant: stores dense vectors, BM25 sparse vectors, and chunk payloads for hybrid retrieval.
-- AI provider: Gemini, Groq, OpenAI, or any OpenAI-compatible gateway provides grounded answer generation. Gemini/OpenAI/custom gateways can also provide embeddings.
+- FastAPI API/UI: upload, source management, chat, feedback, metrics, Slack slash endpoint.
+- Worker: consumes Redis sync jobs and performs source ingestion/reindex.
+- Bot runner: optional Discord and Telegram long-polling adapters.
+- PostgreSQL: source metadata, documents, chunks, chat logs, feedback, metrics, sync jobs.
+- Redis: worker queue.
+- Qdrant: dense vectors plus BM25 sparse vectors.
+- AI provider: Gemini/OpenAI/Groq/OpenAI-compatible chat and embedding providers.
 
 ## Data Flow
 
-Upload flow:
+File upload:
 
-1. `POST /documents/upload` receives PDF, DOCX, or TXT.
-2. File type and size are validated.
-3. File is saved under `data/uploads`.
-4. Parser extracts text and metadata:
-   - TXT: direct UTF-8 read.
-   - PDF: page-level `pypdf`, with Docling fallback.
-   - DOCX: `python-docx`, with Docling fallback.
-5. Chunker creates token-aware chunks with overlap.
-6. Provider embedding client creates dense vectors.
-7. FastEmbed creates BM25 sparse vectors.
-8. Chunks are written to Qdrant with payload metadata.
-9. Document and chunk metadata are written to PostgreSQL.
+1. `POST /documents/upload` saves PDF/DOCX/TXT/Markdown/Notion ZIP.
+2. API creates a `data_sources` record.
+3. Parser extracts one or more parsed documents.
+4. Indexing service chunks, embeds, upserts to Qdrant, writes documents/chunks to PostgreSQL.
+5. Source is marked `indexed` or `failed`.
 
-Chat flow:
+URL/sitemap:
 
-1. `POST /chat` receives a user question and optional document filters.
-2. The question is embedded with the same embedding model.
-3. Qdrant runs dense search and sparse BM25 search, then fuses results with reciprocal-rank style hybrid retrieval.
-4. The answerer rejects weak evidence using `NO_ANSWER_MIN_SCORE`.
-5. If evidence is adequate, the configured LLM provider receives the retrieved context and returns a structured grounded answer.
-6. The API returns answer, citations, no-answer flag, usage, cost, and latency.
-7. Chat log and request metrics are stored in PostgreSQL.
+1. `POST /documents/ingest-url` creates a source and sync job.
+2. API pushes the job ID to Redis.
+3. Worker fetches page or sitemap URLs.
+4. Worker parses readable text with BeautifulSoup, chunks/embeds/upserts, and updates source status.
+5. Scheduled sync is handled by the worker checking sources with `sync_interval_minutes`.
 
-Feedback flow:
+Chat:
 
-1. `POST /feedback` stores rating, comment, and correction.
-2. Feedback later powers eval-set expansion and prompt/retrieval tuning.
+1. UI/API/Bot sends a question to shared `AskService`.
+2. Retriever embeds the question and runs Qdrant dense/sparse/hybrid search.
+3. Optional reranker can reorder candidates.
+4. Answerer applies no-answer threshold and grounded prompt.
+5. Response returns Markdown answer, citations, retrieval trace, token usage, cost, and latency.
 
-## PostgreSQL Tables
+## Storage Model
 
-- `documents`: uploaded file metadata, language, status, page count, chunk count.
-- `chunks`: chunk text and metadata mirror for audit/debug.
-- `chat_logs`: question, answer, citations, retrieval trace, tokens, estimated cost, latency.
-- `feedback`: rating and correction records linked to chats.
-- `request_metrics`: endpoint-level operational metrics.
+- `data_sources`: logical source such as uploaded file, Notion ZIP, website, sitemap.
+- `sync_jobs`: queued/running/completed/failed ingestion or reindex jobs.
+- `documents`: one indexed document/page, optionally linked to a source.
+- `chunks`: chunk text and metadata mirror for debugging.
+- `chat_logs`: answer, citations, retrieval trace, tokens, cost, latency.
+- `feedback`: rating/comment/correction linked to chat.
+- `request_metrics`: operational records.
 
-## Qdrant Collection
+## Retrieval
 
-Collection: `rag_chunks`
+Default `RETRIEVAL_MODE=hybrid`:
 
-Named vectors:
+- dense vector search catches semantic and multilingual matches;
+- BM25 sparse search catches exact terms, names, IDs, dates, and Vietnamese diacritics;
+- Qdrant RRF fusion combines both.
 
-- `dense`: provider embedding vector, default configured dimension `3072`.
-- `sparse`: FastEmbed BM25 sparse vector.
+Supported modes:
 
-Payload fields:
+- `dense`
+- `sparse`
+- `hybrid`
+- `hybrid_rerank`
 
-- `chunk_id`
-- `document_id`
-- `filename`
-- `text`
-- `page`
-- `section`
-- `token_count`
-- `metadata`
+Optional reranker:
 
-## Retrieval Strategy
+- `RERANKER_PROVIDER=none` by default.
+- `RERANKER_PROVIDER=cohere` uses Cohere `/v2/rerank`.
+- `cross-encoder` is reserved for a later local model path.
 
-Default retrieval uses hybrid search because bilingual document QA benefits from both:
+## Citation Metadata
 
-- dense vectors for semantic matches, paraphrases, and translated intent;
-- sparse BM25 for exact terms, numbers, names, legal clauses, IDs, and Vietnamese diacritics.
+Each citation can include:
 
-The v1 pipeline retrieves top candidates from both representations and fuses them in Qdrant. A future reranker can be added after the fused top 20-40 results.
-
-## No-Answer Handling
-
-The system returns no-answer when:
-
-- no chunks are retrieved;
-- top retrieval score is below `NO_ANSWER_MIN_SCORE`;
-- the model's structured response marks `no_answer=true`.
-
-The answer prompt forbids unsupported facts and requires citation markers. The API removes citations when the final answer is no-answer.
+- file/document name;
+- page or section;
+- chunk ID;
+- source type;
+- source URL;
+- source title;
+- source path for Markdown/Notion exports.
 
 ## Failure Modes
 
-- Unsupported file type: `415`.
-- File too large: `413`.
-- Parsing/indexing failure: document is marked `failed`, endpoint returns `500`.
-- Qdrant temporarily unavailable: health and UI still load, upload/chat fail clearly.
-- Missing provider key: deterministic fallback lets the app demo locally, but production-quality answers require API config.
-- Embedding provider switch: if the new model returns a different vector size, recreate the Qdrant collection or keep the same embedding provider/model for existing data.
+- Unsupported upload type: `415`.
+- Oversized upload: `413`.
+- URL fetch error: source and job marked `failed`.
+- Qdrant unavailable: upload/chat fail clearly, UI and health remain available.
+- Redis unavailable: API still records queued jobs in PostgreSQL; worker can fall back to DB polling.
+- Missing bot tokens: bot runner idles; API remains usable.

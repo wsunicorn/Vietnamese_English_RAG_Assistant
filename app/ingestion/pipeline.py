@@ -26,3 +26,20 @@ class IngestionPipeline:
         parsed = self.parser.parse(path, filename=filename, content_type=content_type)
         chunks = self.chunker.chunk(document_id=document_id, parsed=parsed)
         return parsed, chunks
+
+    def parse_many(
+        self,
+        path: Path,
+        *,
+        filename: str,
+        content_type: str,
+    ) -> list[ParsedDocument]:
+        return self.parser.parse_many(path, filename=filename, content_type=content_type)
+
+    def chunk_parsed(
+        self,
+        *,
+        document_id: str,
+        parsed: ParsedDocument,
+    ) -> list[DocumentChunk]:
+        return self.chunker.chunk(document_id=document_id, parsed=parsed)
