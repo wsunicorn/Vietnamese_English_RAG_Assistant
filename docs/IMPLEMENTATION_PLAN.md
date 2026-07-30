@@ -49,3 +49,17 @@
 - Run evaluation table.
 - Record demo video.
 - Add deployment notes for a public Slack slash command URL.
+
+## Phase 8 - Realtime Dashboard And UI Rebuild
+
+- Add Redis pub/sub (`rag:realtime-events`) and a FastAPI `/ws/realtime` WebSocket that relays it to the browser, with heartbeat-only degradation if Redis is unavailable.
+- Publish an event from every mutating endpoint and worker job transition (upload, delete, sync queued/running/indexed/failed, chat completed, feedback stored, reindex queued), each carrying a `refresh` list naming which UI panels changed.
+- Rebuild the static UI as a marketing landing page plus a three-panel operator workspace (sources/documents/history rail, chat, evidence drawer with citation + retrieval-trace tabs), with a live connection indicator and dark/light theme.
+- Add PDF/web-scrape mojibake repair so double-encoded Vietnamese text renders correctly in chunks and citations.
+
+## Phase 9 - Codebase And Documentation Audit
+
+- Fix the retrieval/citation-metadata bugs found during a full read-through (dead `hybrid_rerank` branch, `source_type` mismatch on single-page web ingestion, dead `notion_path` fallback key).
+- Clean up lint configuration so `ruff check .` reflects real issues instead of FastAPI-idiom false positives.
+- Remove an accidentally-committed, unrelated scratch script from the `app` package.
+- Rewrite README and `docs/*.md` to match verified current behavior — including previously-undocumented features (the realtime channel, the actual built UI) and previously-overstated ones (the evaluation script's real metric coverage).

@@ -33,7 +33,8 @@ async def fetch_web_documents(
     else:
         pages = [await fetch_page(url, settings=settings)]
 
-    documents = [page_to_parsed_document(page, source_type=mode) for page in pages if page.text.strip()]
+    source_type = "sitemap" if mode == "sitemap" else "web"
+    documents = [page_to_parsed_document(page, source_type=source_type) for page in pages if page.text.strip()]
     if not documents:
         raise ValueError("No readable text was found at the requested URL.")
     return documents

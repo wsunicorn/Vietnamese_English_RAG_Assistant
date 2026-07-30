@@ -1,8 +1,19 @@
-from pathlib import Path
 from asyncio import sleep
+from contextlib import suppress
+from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import (
@@ -19,7 +30,12 @@ from app.api.schemas import (
     UrlIngestionRequest,
 )
 from app.core.config import Settings, get_settings
-from app.db.repository import ChatRepository, DataSourceRepository, DocumentRepository, SyncJobRepository
+from app.db.repository import (
+    ChatRepository,
+    DataSourceRepository,
+    DocumentRepository,
+    SyncJobRepository,
+)
 from app.db.session import get_session
 from app.ingestion.parsers import SUPPORTED_EXTENSIONS
 from app.ingestion.web import normalize_url
@@ -211,10 +227,8 @@ async def delete_document(
     session: AsyncSession = Depends(get_session),
     vector_store: QdrantHybridStore = Depends(get_vector_store),
 ) -> None:
-    try:
+    with suppress(Exception):
         await vector_store.delete_document(document_id)
-    except Exception:
-        pass
 
     repository = DocumentRepository(session)
     deleted = await repository.delete_document(document_id)
@@ -382,10 +396,8 @@ async def delete_source(
     source = await source_repository.get_source(source_id)
     if source is None:
         raise HTTPException(status_code=404, detail="Source not found.")
-    try:
+    with suppress(Exception):
         await vector_store.delete_source(source_id)
-    except Exception:
-        pass
     await DocumentRepository(session).delete_documents_for_source(source_id)
     deleted = await source_repository.delete_source(source_id)
     if not deleted:

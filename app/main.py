@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -17,11 +17,9 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
     if settings.auto_create_tables:
         await init_db()
-    try:
+    # The app can still serve docs and health checks while Qdrant starts.
+    with suppress(Exception):
         await QdrantHybridStore(settings).ensure_collection()
-    except Exception:
-        # The app can still serve docs and health checks while Qdrant starts.
-        pass
     yield
 
 

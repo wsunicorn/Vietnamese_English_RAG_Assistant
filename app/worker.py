@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 from pathlib import Path
 
 from app.core.config import get_settings
@@ -183,10 +184,8 @@ async def sync_source(job_id: str, source_id: str | None) -> None:
 
     async with session_factory() as session:
         document_repository = DocumentRepository(session)
-        try:
+        with suppress(Exception):
             await vector_store.delete_source(source_id)
-        except Exception:
-            pass
         await document_repository.delete_documents_for_source(source_id)
         indexed = await indexing.index_parsed_documents(
             session=session,

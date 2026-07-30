@@ -16,8 +16,7 @@ def test_healthz():
 
 
 def test_realtime_websocket_connects():
-    with TestClient(app) as client:
-        with client.websocket_connect("/ws/realtime") as websocket:
-            event = websocket.receive_json()
+    with TestClient(app) as client, client.websocket_connect("/ws/realtime") as websocket:
+        event = websocket.receive_json()
 
     assert event["type"] == "connected"

@@ -3,7 +3,6 @@ from zipfile import ZipFile
 
 from app.ingestion.chunking import DocumentPage, ParsedDocument, normalize_whitespace
 
-
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".markdown", ".zip"}
 
 

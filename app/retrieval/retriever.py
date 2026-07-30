@@ -52,6 +52,4 @@ class HybridRetriever:
             document_ids=document_ids,
             force_sparse=force_sparse,
         )
-        if mode == "hybrid_rerank":
-            return await maybe_rerank(question=question, chunks=chunks, settings=self.settings)
         return await maybe_rerank(question=question, chunks=chunks, settings=self.settings)

@@ -16,3 +16,4 @@ qdrant_storage/
 postgres_data/
 .DS_Store
 docs/images/demo/*
+docs/images/

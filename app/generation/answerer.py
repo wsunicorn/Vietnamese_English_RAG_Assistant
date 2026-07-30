@@ -247,7 +247,7 @@ def citation_from_chunk(index: int, chunk: RetrievedChunk) -> dict:
         "source_type": metadata.get("source_type"),
         "source_url": metadata.get("source_url"),
         "source_title": metadata.get("source_title"),
-        "source_path": metadata.get("source_path") or metadata.get("notion_path"),
+        "source_path": metadata.get("source_path"),
     }
 
 

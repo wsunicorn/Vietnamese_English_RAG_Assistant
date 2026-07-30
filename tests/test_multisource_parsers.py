@@ -1,10 +1,15 @@
-from zipfile import ZipFile
-
 import asyncio
+from zipfile import ZipFile
 
 from app.core.config import Settings
 from app.ingestion.parsers import DocumentParser
-from app.ingestion.web import fetch_sitemap_urls, normalize_url, page_to_parsed_document, WebPage
+from app.ingestion.web import (
+    WebPage,
+    fetch_sitemap_urls,
+    fetch_web_documents,
+    normalize_url,
+    page_to_parsed_document,
+)
 
 
 def test_markdown_parser_preserves_heading_sections(tmp_path):
@@ -72,3 +77,28 @@ def test_sitemap_parser_filters_to_same_domain(monkeypatch):
 
 def test_normalize_url_defaults_to_https():
     assert normalize_url("example.com/docs#section") == "https://example.com/docs"
+
+
+def test_fetch_web_documents_tags_single_page_mode_as_web_source_type(monkeypatch):
+    class Response:
+        headers = {"content-type": "text/html; charset=utf-8"}
+        content = b"<html><title>Docs</title><body>Policy content</body></html>"
+        text = content.decode("utf-8")
+        url = "https://example.com/docs"
+
+    async def fake_get(url, *, settings):
+        return Response()
+
+    monkeypatch.setattr("app.ingestion.web.http_get", fake_get)
+
+    documents = asyncio.run(
+        fetch_web_documents(
+            url="https://example.com/docs",
+            mode="page",
+            max_pages=1,
+            settings=Settings(),
+        )
+    )
+
+    assert len(documents) == 1
+    assert documents[0].metadata["source_type"] == "web"
